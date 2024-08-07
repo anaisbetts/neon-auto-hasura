@@ -1,0 +1,16 @@
+{
+    "name": "hasura-neon-pulumi",
+    "main": "index.ts",
+    "devDependencies": {
+        "@types/node": "^18",
+        "typescript": "^5.0.0"
+    },
+    "dependencies": {
+        "@neondatabase/api-client": "^1.10.0",
+        "@pulumi/docker": "^4.5.5",
+        "@pulumi/pulumi": "^3.113.0",
+        "@pulumi/random": "^4.16.3",
+        "hasura-cli": "^2.0.0-alpha.11",
+        "spawn-rx": "^3.0.0"
+    }
+}

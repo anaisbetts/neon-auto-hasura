@@ -1,0 +1,7 @@
+name: hasura-neon-pulumi
+runtime: nodejs
+description: Set up Neon + Hasura
+config:
+  pulumi:tags:
+    value:
+      pulumi:template: ""
