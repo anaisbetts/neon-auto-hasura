@@ -23,35 +23,39 @@ export = async () => {
 	}
 
 	const branches = await api.listProjectBranches(projectInfo.id)
-	const hasuraImage = new docker.RemoteImage("hasura", {name: "hasura/graphql-engine", keepLocally: true})
+	const hasuraImage = new docker.RemoteImage("hasura-image", {name: "hasura/graphql-engine:v2.42.0"})
+
+	const connStrings: Record<string, string> = {}
+	for (const branch of branches.data.branches) {
+		connStrings[branch.name] = await getConnectionString(api, projectInfo.id, branch.id, databaseName, false, "require", cfg.get("neonRoleName"))
+	}
 
 	const containers: Record<string, docker.Container> = {}
-
 	for (const branch of branches.data.branches) {
 		const port = new random.RandomInteger(`hasura-port-${branch.name}`, {
       min: 32768,
       max: 65535,
     });
 
-		const connString = await getConnectionString(api, projectInfo.id, branch.id, databaseName, false, "require", cfg.get("neonRoleName"))
+		const connString = connStrings[branch.name]
 
 		containers[branch.name] = new docker.Container(`hasura-${branch.name}`, {
-			image: hasuraImage.name,
+			image: hasuraImage.repoDigest,
 			name: `hasura-${branch.name}`,
 			ports: [{ internal: 8080, external: port.result }],
+			networkMode: "bridge",
 			envs: [
 				`HASURA_GRAPHQL_DATABASE_URL=${connString}`,
 				`HASURA_GRAPHQL_ENABLE_CONSOLE=true`,
 				hasuraSecretKey.apply(s => `HASURA_GRAPHQL_ADMIN_SECRET=${s}`)
 			],
 			start: true
-		})
+		}, { ignoreChanges: ["image"] })
 	}
-
-	console.log(`There are ${containers.length} containers!`)
 
 	return Object.keys(containers).reduce((acc, x) => {
 		acc[`${x}-endpoint`] = containers[x].ports.apply(p => `${baseUrl}:${p!![0].external}`)
+		acc[`${x}-containerId`] = containers[x].id
 
 		return acc;
 	}, {} as Record<string, any>)
