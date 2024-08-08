@@ -1,5 +1,23 @@
 import { Api, EndpointType } from "@neondatabase/api-client";
 
+export async function connectionStringsForBranches(api: Api<unknown>, project: string, database: string, role?: string): Promise<Record<string, string>> {
+	const projectInfo = (await api.listProjects({limit: 400})).data.projects.find(x => x.name === project)
+
+	if (!projectInfo) { 
+		throw new Error(`Project ${project} not found`)
+	}
+
+	const branches = await api.listProjectBranches(projectInfo.id)
+
+	const connStrings: Record<string, string> = {}
+	for (const branch of branches.data.branches) {
+		connStrings[branch.name] = await getConnectionString(api, projectInfo.id, branch.id, database, false, "require", role)
+	}
+
+	return connStrings
+}
+
+
 export async function getConnectionString(
 	apiClient: Api<unknown>,
 	projectId: string,
